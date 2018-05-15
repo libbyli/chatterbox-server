@@ -45,6 +45,9 @@ var requestHandler = function(request, response) {
   } else if (request.method === "OPTIONS") {
     response.writeHead(200, headers);
     response.end();
+  } else if (!request.method) {
+    response.writeHead(405, headers);
+    response.end();
   }
 };
 

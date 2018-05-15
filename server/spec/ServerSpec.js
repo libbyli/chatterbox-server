@@ -75,6 +75,20 @@ describe('Node Server Request Listener Function', function() {
     expect(res._ended).to.equal(true);
   });
 
+  it('Should 404 if url is not /classes/messages', function() {
+    var stubMsg = {
+      username: 'Jono',
+      text: 'Do my bidding!'
+    };
+    var req = new stubs.request('/wrongurl', 'GET', stubMsg);
+    var res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    // Expect 201 Created response status
+    expect(res._responseCode).to.equal(404);
+  });
+
   it('Should respond with messages that were previously posted', function() {
     var stubMsg = {
       username: 'Jono',
@@ -100,7 +114,6 @@ describe('Node Server Request Listener Function', function() {
     expect(messages[0].text).to.equal('Do my bidding!');
     expect(res._ended).to.equal(true);
   });
-
 
   it('Should 404 when asked for a nonexistent file', function() {
     var req = new stubs.request('/arglebargle', 'GET');
@@ -148,5 +161,50 @@ describe('Node Server Request Listener Function', function() {
     var messages = JSON.parse(res._data).results;
     expect(messages.length).to.equal(3);
   });
+
+  it('Should respond with messages in the order they were posted', function() {
+    var stubMsg = {
+      username: 'Brian',
+      text: 'I drink too much coffee'
+    };
+    var req = new stubs.request('/classes/messages', 'POST', stubMsg);
+    var res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    var stubMsg = {
+      username: 'Libby',
+      text: 'I\'m dying'
+    };
+    var req = new stubs.request('/classes/messages', 'POST', stubMsg);
+    var res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    req = new stubs.request('/classes/messages', 'GET');
+    res = new stubs.response();
+    handler.requestHandler(req, res);
+    var messages = JSON.parse(res._data).results;
+    expect(messages[3].username).to.equal('Brian');
+    expect(messages[3].text).to.equal('I drink too much coffee');
+    expect(messages[4].username).to.equal('Libby');
+    expect(messages[4].text).to.equal('I\'m dying');
+  });
+
+  it('Should 405 when request method not specified', function() {
+    var req = new stubs.request('/arglebargle');
+    var res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    // Wait for response to return and then check status code
+    waitForThen(
+      function() { return res._ended; },
+      function() {
+        expect(res._responseCode).to.equal(405);
+      });
+  });
+
+
 
 });
